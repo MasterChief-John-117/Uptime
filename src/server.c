@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <strings.h>
 #include <sys/socket.h>	// socket
 #include <sys/types.h>	// Not strictly needed, but potentially required for BSD
 #include <netinet/in.h>	// sockaddr_in
@@ -109,12 +111,25 @@ int main() {
 	 * addr and addrlen can be set to NULL. If addr is NULL, addrlen should be NULL as well.
 	 * the accept() call will block until a client connects
 	 */
-	int client_socket;
-	if ((client_socket = accept(server_fd, NULL, NULL) < 0)) {
-	//if ((client_socket = accept(server_fd, (struct sockaddr*) &server_address, (socklen_t*)sizeof(server_address))) < 0) {
+	int client_fd, client_addr_len;
+	struct sockaddr_in client_addr;
+	client_addr_len = sizeof(client_addr);
+	if ((client_fd = accept(server_fd, (struct sockaddr*) &client_addr, (socklen_t*)&client_addr_len)) < 0) {
 		perror("Error accepting new connection");
 		exit(EXIT_FAILURE);
 	}
 
+	/*
+	 * First allocate a buffer of 4096 bytes and set all values to \0
+	 * Read a maxiumum of 4096 bytes from the client socket into buffer and print that buffer.
+	 * It's worth noting read is blocking, so if done in a loop it will block indefinitely or until the 
+	 * client closes the connection. We'll fix that later.
+	 */
+	char* buffer = calloc(sizeof(char), 4096);
+	read(client_fd, buffer, 4095);
+	printf("%s\n", buffer);
+
+	// Close the connection to the client and exit
+	close(client_fd);
 	return 0;
 }
