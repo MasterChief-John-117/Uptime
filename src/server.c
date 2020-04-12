@@ -5,6 +5,7 @@
 #include <netinet/in.h>	// sockaddr_in
 
 const int PORT = 8080;
+const int BACKLOG = 1024;
 
 int main() {
 	/*
@@ -83,7 +84,20 @@ int main() {
 	*/
 	if (bind(server_fd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
 		perror("Could not bind to address or port");
-		exit(1);
+		exit(EXIT_FAILURE);
+	}
+
+	/*
+	* listen() tells a server to listen to a socket and is defined as below:
+	* int listen(int sockfd, int backlog);
+	* It returns 0 on success and -1 on failure 
+	* The backlog argument specifies the number of connections that can be waiting before
+	* the system stops accepting new connection. If backlog is greater than the value in /proc/sys/net/ipv4/tcp_max_syn_backlog,
+	* it will be reduced to that value. 
+	*/
+	if (listen(server_fd, BACKLOG) < 0) {
+		perror("Error listening to socket");
+		exit(EXIT_FAILURE);
 	}
 	return 0;
 }
