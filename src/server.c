@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include <strings.h>
 #include <sys/socket.h>	// socket
 #include <sys/types.h>	// Not strictly needed, but potentially required for BSD
@@ -120,15 +121,26 @@ int main() {
 	}
 
 	/*
+	 * If we don't do this, looping over read will block forever or until the client terminates the connection
+	 * I stole this from https://stackoverflow.com/a/22339017 and I'm not quite sure how it works, but it does
+	 */
+	if (fcntl(client_fd, F_SETFL, fcntl(client_fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
+		perror("Error making client socket non-blocking");
+		exit(EXIT_FAILURE);
+	}
+
+	/*
 	 * First allocate a buffer of 4096 bytes and set all values to \0
 	 * Read a maxiumum of 4096 bytes from the client socket into buffer and print that buffer.
 	 * It's worth noting read is blocking, so if done in a loop it will block indefinitely or until the 
 	 * client closes the connection. We'll fix that later.
 	 */
-	char* buffer = calloc(sizeof(char), 4096);
-	read(client_fd, buffer, 4095);
-	printf("%s\n", buffer);
-
+	char* buffer = calloc(sizeof(char), 256);
+	while(read(client_fd, buffer, 255) > 0) {
+		printf("%s", buffer);
+		buffer = calloc(sizeof(char), 256);
+	}
+	puts("\n");
 	// Close the connection to the client and exit
 	close(client_fd);
 	return 0;
