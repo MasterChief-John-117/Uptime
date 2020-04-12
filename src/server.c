@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/socket.h>	// socket
+#include <sys/types.h>	// Not strictly needed, but potentially required for BSD
 #include <netinet/in.h>	// sockaddr_in
 
 const int PORT = 8080;
@@ -66,5 +67,17 @@ int main() {
 	server_address.sin_family = AF_INET;
 	server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 	server_address.sin_port = htons(PORT);
+
+	// Bind the socket to the address we set up. Returns 0 on success or -1 on failure.
+	// Bind is defined by
+	// int bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+	// The first argument is the socket file descriptor created earlier.
+	// The second argument is a pointer to a sockaddr struct, but since we constructed a 
+	// sockaddr_in struct, it must be converted to the proper type.
+	// The third argument is the size of the address
+	if (bind(server_fd, (struct sockaddr *) &server_address, sizeof(server_address)) < 0) {
+		perror("Could not bind to address or port");
+		exit(1);
+	}
 	return 0;
 }
