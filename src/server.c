@@ -99,5 +99,22 @@ int main() {
 		perror("Error listening to socket");
 		exit(EXIT_FAILURE);
 	}
+
+	/*
+	 * Accept the new connection. accept is defined as below:
+	 * int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+	 * The first argument is the original socket descriptor
+	 * The second argument is the address struct that will be populated with the connecting client's address
+	 * The third argument is the length of this struct, but cast to a socklen_t pointer
+	 * addr and addrlen can be set to NULL. If addr is NULL, addrlen should be NULL as well.
+	 * the accept() call will block until a client connects
+	 */
+	int client_socket;
+	if ((client_socket = accept(server_fd, NULL, NULL) < 0)) {
+	//if ((client_socket = accept(server_fd, (struct sockaddr*) &server_address, (socklen_t*)sizeof(server_address))) < 0) {
+		perror("Error accepting new connection");
+		exit(EXIT_FAILURE);
+	}
+
 	return 0;
 }
