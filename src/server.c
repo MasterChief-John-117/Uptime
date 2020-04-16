@@ -17,17 +17,26 @@ void* client_handler(void* client_fd_ptr) {
 	int client_fd = *(int*) client_fd_ptr;
 	// Create the response and request buffers
 	char *response, request[65535];
-	response = "HTTP/1.1 200 OK\r\n"
-		"Server: fuck-you/1.0\r\n"
-		"Content-Type: text/plain\r\n"
-		"\r\n"
-		":ok:\r\n\n";
-
 	// Read the input into the request buffer and print it
 	int read_length = recv(client_fd, request, 65535, 0);
 	request[read_length] = '\0';
 	printf("%s\n", request);
 
+	// Check that we're getting a GET request to the index route, else return a 404
+	if (strncmp("GET / ", request, strlen("GET / ")) == 0) {
+		response = "HTTP/1.1 200 OK\r\n"
+			"Server: fuck-you/1.0\r\n"
+			"Content-Type: text/plain\r\n"
+			"\r\n"
+			":ok:\r\n\n";	
+	}
+	else {
+		response = "HTTP/1.1 404 Not Found\r\n"
+			"Server: fuck-you/1.0\r\n"
+			"Content-Type: text/plain\r\n"
+			"\r\n"
+			"F\r\n";	
+	}
 	// Send the response and close the socket
 	send(client_fd, response, strlen(response), 0);
 	close(client_fd);
