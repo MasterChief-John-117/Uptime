@@ -139,11 +139,31 @@ int main() {
 	client_addr_len = sizeof(client_addr);
 	pthread_t thread_id;
 
+	/*
+	 * This continually spins off new threads for each request. Threading is quicker than forking 
+	 * because the memeroy doesn't have to be copied, but for this kind of app the overhead is negligible.
+	 * 
+	 * accept is defined by the following signature
+	 * 	int accept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
+	 * sockfd is the server socket file descriptor. addr is a pointer to an empty client address and addrlen 
+	 * is the length of that struct. accept returns the client socket file descriptor if successful, or -1 on failure
+	 */
 	while ((client_fd = accept(server_fd, (struct sockaddr*) &client_addr, (socklen_t*)&client_addr_len))) {
 		if(client_fd < 0) {
 			perror("Error accepting new connection");
+			continue;
 		}
-	
+
+		/*
+		 * pthread_create is defined by the following method:
+		 * 	#include <pthread.h>
+		 * 	int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine) (void *), void *arg);
+		 *
+		 * thread is a pointer to an empty pthread_t that allows future actions like join() on the thread.
+		 * start_routine is a method to run in the thread and arg is an argument to pass into the thread
+		 * pthread_create returns -1 on failure
+		 * To compile and link it with the pthread library, use the -pthread flag with gcc
+		 */	
 		if(pthread_create(&thread_id, NULL, client_handler, (void*)&client_fd) < 0) {
 			perror("Error creating handler thread");
 		}
