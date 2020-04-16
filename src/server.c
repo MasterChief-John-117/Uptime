@@ -13,21 +13,23 @@ const int PORT = 8080;
 const int BACKLOG = 1024;
 
 void* client_handler(void* client_fd_ptr) {
+	// Convert the void pointer input to an int for the client file descriptor
 	int client_fd = *(int*) client_fd_ptr;
+	// Create the response and request buffers
 	char *response, request[65535];
-
 	response = "HTTP/1.1 200 OK\r\n"
 		"Server: fuck-you/1.0\r\n"
 		"Content-Type: text/plain\r\n"
 		"\r\n\r\n"
 		":ok:\r\n\n";
 
+	// Read the input into the request buffer and print it
 	int read_length = recv(client_fd, request, 65535, 0);
 	request[read_length] = '\0';
 	printf("%s\n", request);
 
+	// Send the response and close the socket
 	send(client_fd, response, strlen(response), 0);
-
 	close(client_fd);
 	return NULL;
 }
