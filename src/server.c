@@ -20,7 +20,7 @@ void* client_handler(void* client_fd_ptr) {
 	response = "HTTP/1.1 200 OK\r\n"
 		"Server: fuck-you/1.0\r\n"
 		"Content-Type: text/plain\r\n"
-		"\r\n\r\n"
+		"\r\n"
 		":ok:\r\n\n";
 
 	// Read the input into the request buffer and print it
