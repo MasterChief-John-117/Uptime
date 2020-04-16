@@ -1,14 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <strings.h>
 #include <sys/socket.h>	// socket
 #include <sys/types.h>	// Not strictly needed, but potentially required for BSD
 #include <netinet/in.h>	// sockaddr_in
+#include <pthread.h>
 
 const int PORT = 8080;
 const int BACKLOG = 1024;
+
+void* client_handler(void* client_fd_ptr) {
+	int client_fd = *(int*) client_fd_ptr;
+	char *response, request[65535];
+
+	response = "HTTP/1.1 200 OK\r\n"
+		"Server: fuck-you/1.0\r\n"
+		"Content-Type: text/plain\r\n"
+		"\r\n\r\n"
+		":ok:\r\n\n";
+
+	int read_length = recv(client_fd, request, 65535, 0);
+	request[read_length] = '\0';
+	printf("%s\n", request);
+
+	send(client_fd, response, strlen(response), 0);
+
+	close(client_fd);
+	return NULL;
+}
 
 int main() {
 	/*
@@ -115,33 +137,16 @@ int main() {
 	int client_fd, client_addr_len;
 	struct sockaddr_in client_addr;
 	client_addr_len = sizeof(client_addr);
-	if ((client_fd = accept(server_fd, (struct sockaddr*) &client_addr, (socklen_t*)&client_addr_len)) < 0) {
-		perror("Error accepting new connection");
-		exit(EXIT_FAILURE);
-	}
+	pthread_t thread_id;
 
-	/*
-	 * If we don't do this, looping over read will block forever or until the client terminates the connection
-	 * I stole this from https://stackoverflow.com/a/22339017 and I'm not quite sure how it works, but it does
-	 */
-	if (fcntl(client_fd, F_SETFL, fcntl(client_fd, F_GETFL, 0) | O_NONBLOCK) < 0) {
-		perror("Error making client socket non-blocking");
-		exit(EXIT_FAILURE);
+	while ((client_fd = accept(server_fd, (struct sockaddr*) &client_addr, (socklen_t*)&client_addr_len))) {
+		if(client_fd < 0) {
+			perror("Error accepting new connection");
+		}
+	
+		if(pthread_create(&thread_id, NULL, client_handler, (void*)&client_fd) < 0) {
+			perror("Error creating handler thread");
+		}
 	}
-
-	/*
-	 * First allocate a buffer of 4096 bytes and set all values to \0
-	 * Read a maxiumum of 4096 bytes from the client socket into buffer and print that buffer.
-	 * It's worth noting read is blocking, so if done in a loop it will block indefinitely or until the 
-	 * client closes the connection. We'll fix that later.
-	 */
-	char* buffer = calloc(sizeof(char), 256);
-	while(read(client_fd, buffer, 255) > 0) {
-		printf("%s", buffer);
-		buffer = calloc(sizeof(char), 256);
-	}
-	puts("\n");
-	// Close the connection to the client and exit
-	close(client_fd);
 	return 0;
 }
